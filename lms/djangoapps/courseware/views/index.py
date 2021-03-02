@@ -170,20 +170,19 @@ class CoursewareIndex(View):
 
     def _redirect_to_learning_mfe(self):
         """
-        Redirect to the new courseware micro frontend,
-        unless this is a time limited exam.
+        Can the user access this sequence in Legacy courseware? If not, redirect to MFE.
+
+        We specifically allow users to stay in the Legacy frontend for special
+        (ie timed/proctored) exams since they're not yet supported by the MFE.
         """
-        # DENY: staff access
-        if self.is_staff:
-            return
-        # DENY: Old Mongo courses, until removed from platform
-        if self.course_key.deprecated:
-            return
-        # DENY: Timed Exams, until supported
-        if getattr(self.section, 'is_time_limited', False):
-            return
-        # ALLOW: when flag set for course
-        if REDIRECT_TO_COURSEWARE_MICROFRONTEND.is_enabled(self.course_key):
+        course_visible_in_legacy = courseware_legacy_is_visible(
+            course_key=self.course_key,
+            is_global_staff=self.user.is_staff,
+            is_course_staff=self.is_staff,
+        )
+        sequence_is_special_exam = getattr(self.section, 'is_time_limited', False)
+        sequence_visible_in_legacy = course_visible_in_legacy or sequence_is_special_exam
+        if not sequence_is_special_exam:
             raise Redirect(self.microfrontend_url)
 
     @property
@@ -622,6 +621,9 @@ def show_courseware_mfe_link(user, staff_access, course_key):
     """
     Return whether to display the button to switch to the Courseware MFE.
     """
+    if courseware_mfe_is_visible(course_key):
+        return True
+
     # MFE does not work for Old Mongo courses.
     if course_key.deprecated:
         return False

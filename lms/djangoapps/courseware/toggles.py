@@ -5,6 +5,9 @@ Toggles for courseware in-course experience.
 from edx_toggles.toggles import LegacyWaffleFlagNamespace
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
+from opaque_keys.edx.keys import CourseKey
+
+
 # Namespace for courseware waffle flags.
 WAFFLE_FLAG_NAMESPACE = LegacyWaffleFlagNamespace(name='courseware')
 
@@ -129,48 +132,54 @@ COURSEWARE_OPTIMIZED_RENDER_XBLOCK = CourseWaffleFlag(
 )
 
 
-def courseware_mfe_is_active(course_key):
+def courseware_mfe_is_active(course_key: CourseKey) -> bool:
     """
-    @@TODO ...
-
-    Returns: bool
+    Should we serve the Learning MFE as the canonical courseware experience?
     """
+    # NO: Old Mongo courses are always served in the Legacy frontend,
+    #     regardless of configuration.
     if course_key.deprecated:
         return False
+    # OTHERWISE: Defer to value of waffle flag for this course run and user.
     return REDIRECT_TO_COURSEWARE_MICROFRONTEND.is_enabled(course_key)
 
 
 def courseware_mfe_is_visible(
-        course_key,
+        course_key: CourseKey,
         is_global_staff=False,
         is_course_staff=False,
-        is_special_exam=False,
-):
+) -> bool:
     """
-    @@TODO ...
-
-    Returns: bool
+    Can we see a course run's content in the Learning MFE?
     """
-    if course_key.deprecated or is_special_exam:
+    # DENY: Old Mongo courses don't work in the MFE.
+    if course_key.deprecated:
         return False
-    if is_global_staff or is_course_staff:
+    # ALLOW: Where techincally possible, global staff may always see the MFE.
+    if is_global_staff:
         return True
+    # ALLOW: If course team preview is enabled, then course staff may see their
+    #        course in the MFE.
+    if is_course_staff and COURSEWARE_MICROFRONTEND_COURSE_TEAM_PREVIEW.is_enabled(course_key):
+        return True
+    # OTHERWISE: The MFE is only visible if it's the active (ie canonical) experience.
     return courseware_mfe_is_active(course_key)
 
 
 def courseware_legacy_is_visible(
-        course_key,
+        course_key: CourseKey,
         is_global_staff=False,
         is_course_staff=False,
-        is_special_exam=False,
-):
+) -> bool:
     """
-    @@TODO ...
+    Can we see a course run's content in the Legacy frontend?
 
     Returns: bool
     """
-    if course_key.deprecated or is_special_exam:
+    # DENY: Old Mongo courses don't work in the MFE.
+    if course_key.deprecated:
         return True
+    # DENY: Special (ie timed/proctored) exams don't yet work in the MFE.
     if is_global_staff or is_course_staff:
         return True
     return not courseware_mfe_is_active(course_key)
