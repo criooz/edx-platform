@@ -33,7 +33,7 @@ from lms.djangoapps.courseware.courses import check_course_access, get_course_by
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from lms.djangoapps.courseware.module_render import get_module_by_usage_id
 from lms.djangoapps.courseware.tabs import get_course_tab_list
-from lms.djangoapps.courseware.toggles import REDIRECT_TO_COURSEWARE_MICROFRONTEND, course_exit_page_is_active
+from lms.djangoapps.courseware.toggles import courseware_mfe_is_visible, course_exit_page_is_active
 from lms.djangoapps.courseware.views.views import get_cert_data
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.verify_student.services import IDVerificationService
@@ -70,6 +70,7 @@ class CoursewareMeta:
             course_key,
         )
         self.original_user_is_staff = has_access(self.request.user, 'staff', self.overview).has_access
+        self.original_user_is_global_staff = self.request.user.is_staff
         self.course_key = course_key
         self.course_masquerade, self.effective_user = setup_masquerade(
             self.request,
@@ -97,14 +98,11 @@ class CoursewareMeta:
            the MFE experience, but who aren't staff. Staff are allowed to
            stay.
         """
-        # REDIRECT: Old Mongo courses, until removed from platform
-        if self.course_key.deprecated:
-            return False
-        # REDIRECT: If the user isn't staff, redirect if they're bucketed into the old LMS experience.
-        if not self.original_user_is_staff and not REDIRECT_TO_COURSEWARE_MICROFRONTEND.is_enabled(self.course_key):
-            return False
-        # STAY: If the user has made it past all the above, they're good to stay!
-        return True
+        return courseware_mfe_is_visible(
+            course_key=self.course_key,
+            is_global_staff=self.original_user_is_global_staff,
+            is_course_staff=self.original_user_is_staff
+        )
 
     @property
     def enrollment(self):

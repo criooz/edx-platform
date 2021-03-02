@@ -129,6 +129,53 @@ COURSEWARE_OPTIMIZED_RENDER_XBLOCK = CourseWaffleFlag(
 )
 
 
+def courseware_mfe_is_active(course_key):
+    """
+    @@TODO ...
+
+    Returns: bool
+    """
+    if course_key.deprecated:
+        return False
+    return REDIRECT_TO_COURSEWARE_MICROFRONTEND.is_enabled(course_key)
+
+
+def courseware_mfe_is_visible(
+        course_key,
+        is_global_staff=False,
+        is_course_staff=False,
+        is_special_exam=False,
+):
+    """
+    @@TODO ...
+
+    Returns: bool
+    """
+    if course_key.deprecated or is_special_exam:
+        return False
+    if is_global_staff or is_course_staff:
+        return True
+    return courseware_mfe_is_active(course_key)
+
+
+def courseware_legacy_is_visible(
+        course_key,
+        is_global_staff=False,
+        is_course_staff=False,
+        is_special_exam=False,
+):
+    """
+    @@TODO ...
+
+    Returns: bool
+    """
+    if course_key.deprecated or is_special_exam:
+        return True
+    if is_global_staff or is_course_staff:
+        return True
+    return not courseware_mfe_is_active(course_key)
+
+
 def course_exit_page_is_active(course_key):
     return (
         REDIRECT_TO_COURSEWARE_MICROFRONTEND.is_enabled(course_key) and
