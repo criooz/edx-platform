@@ -512,7 +512,7 @@ class AccountSettingsOnCreationTest(CreateAccountMixin, TestCase):
         self.create_account(self.USERNAME, self.PASSWORD, self.EMAIL)
         # Retrieve the account settings
         user = User.objects.get(username=self.USERNAME)
-        self.ID = user.ID
+        self.ID = user.id
         request = RequestFactory().get("/api/user/v1/accounts/")
         request.user = user
         account_settings = get_account_settings(request)[0]
@@ -524,33 +524,36 @@ class AccountSettingsOnCreationTest(CreateAccountMixin, TestCase):
         del account_settings['last_login']
 
         # Expect all the values to be defaulted
-        assert account_settings ==\
-            {'username': self.USERNAME,
-             'email': self.EMAIL,
-                'id': self.ID,
-                'name': self.USERNAME,
-                'gender': None, 'goals': u'',
-                'is_active': False,
-                'level_of_education': None,
-                'mailing_address': u'',
-                'year_of_birth': None,
-                'country': None,
-                'state': None,
-                'social_links': [],
-                'bio': None,
-                'profile_image': {'has_image': False,
-                                  'image_url_full': request.build_absolute_uri('/static/default_50.png'),
-                                  'image_url_small': request.build_absolute_uri('/static/default_10.png')},
-                'requires_parental_consent': True,
-                'language_proficiencies': [],
-                'account_privacy': PRIVATE_VISIBILITY,
-                'accomplishments_shared': False,
-                'extended_profile': [],
-                'secondary_email': None,
-                'secondary_email_enabled': None,
-                'time_zone': None,
-                'course_certificates': None,
-                'phone_number': None}
+        assert account_settings == {
+            'username': self.USERNAME,
+            'email': self.EMAIL,
+            'id': self.ID,
+            'name': self.USERNAME,
+            'gender': None, 'goals': u'',
+            'is_active': False,
+            'level_of_education': None,
+            'mailing_address': u'',
+            'year_of_birth': None,
+            'country': None,
+            'state': None,
+            'social_links': [],
+            'bio': None,
+            'profile_image': {
+                'has_image': False,
+                'image_url_full': request.build_absolute_uri('/static/default_50.png'),
+                'image_url_small': request.build_absolute_uri('/static/default_10.png')
+            },
+            'requires_parental_consent': True,
+            'language_proficiencies': [],
+            'account_privacy': PRIVATE_VISIBILITY,
+            'accomplishments_shared': False,
+            'extended_profile': [],
+            'secondary_email': None,
+            'secondary_email_enabled': None,
+            'time_zone': None,
+            'course_certificates': None,
+            'phone_number': None
+        }
 
     def test_normalize_password(self):
         """
