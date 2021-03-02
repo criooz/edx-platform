@@ -203,7 +203,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
 
         account_settings = get_account_settings(self.default_request)[0]
         assert account_settings['social_links'] == \
-               sorted((original_social_links + extra_social_links), key=(lambda s: s['platform']))
+            sorted((original_social_links + extra_social_links), key=(lambda s: s['platform']))
 
     def test_replace_social_links(self):
         original_facebook_link = dict(platform="facebook", social_link="https://www.facebook.com/myself")
@@ -505,12 +505,14 @@ class AccountSettingsOnCreationTest(CreateAccountMixin, TestCase):
     USERNAME = u'frank-underwood'
     PASSWORD = u'ṕáśśẃőŕd'
     EMAIL = u'frank+underwood@example.com'
+    ID = -1
 
     def test_create_account(self):
         # Create a new account, which should have empty account settings by default.
         self.create_account(self.USERNAME, self.PASSWORD, self.EMAIL)
         # Retrieve the account settings
         user = User.objects.get(username=self.USERNAME)
+        self.ID = user.ID
         request = RequestFactory().get("/api/user/v1/accounts/")
         request.user = user
         account_settings = get_account_settings(request)[0]
@@ -523,8 +525,9 @@ class AccountSettingsOnCreationTest(CreateAccountMixin, TestCase):
 
         # Expect all the values to be defaulted
         assert account_settings ==\
-               {'username': self.USERNAME,
-                'email': self.EMAIL,
+            {'username': self.USERNAME,
+             'email': self.EMAIL,
+                'id': self.ID,
                 'name': self.USERNAME,
                 'gender': None, 'goals': u'',
                 'is_active': False,
